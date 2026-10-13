@@ -66,12 +66,28 @@ namespace MacroDeck.Teamspeak3Plugin
             try
             {
                 var entries = await context.Config.GetEntriesAsync();
-                var config = entries.First(); // It is only one Config Entry for this Plugin, so we can just take the first one
+                if (entries.Count == 0)
+                {
+                    _logger.Warning("No plugin configuration entry found during initialization.");
+                    return;
+                }
 
+                var config = entries[0]; // It is only one Config Entry for this Plugin, so we can just take the first one
                 var apiKey = await context.Config.GetSecretAsync(config.Id, "api_key");
-                if (apiKey != null)
+
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    _logger.Warning("No API key configured; skipping TeamSpeak connection.");
+                    return;
+                }
+
+                try
                 {
                     Teamspeak3Telnet.Instance.ConnectClient(apiKey);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning(ex, "Unable to connect to TeamSpeak during initialization.");
                 }
 
                 /*
@@ -84,12 +100,10 @@ namespace MacroDeck.Teamspeak3Plugin
                     }
                 }
                 */
-                return;
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "An error occurred while initializing the plugin.");
-                return;
+                _logger.Warning(ex, "An unexpected issue occurred while initializing the plugin.");
             }
         }
 
