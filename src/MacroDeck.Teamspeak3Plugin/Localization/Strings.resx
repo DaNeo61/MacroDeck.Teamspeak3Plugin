@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Setup.ApiKey" xml:space="preserve">
+    <value>Client Query API-Key</value>
+  </data>
+  <data name="Setup.ConnectionTitle" xml:space="preserve">
+    <value>Teamspeak3Plugin connection settings</value>
+  </data>
+  <data name="Setup.CannotConnect" xml:space="preserve">
+    <value>ClientQuery API can not connect to Teamspeak3</value>
+  </data>
+  <data name="Setup.PollInterval" xml:space="preserve">
+    <value>Interval to poll teamspeak query informations</value>
+  </data>
+  <data name="Actions.InputMute.Name" xml:space="preserve">
+    <value>Mute/Unmute Input</value>
+  </data>
+  <data name="Actions.InputMute.Description" xml:space="preserve">
+    <value>Mutes or unmutes the teamspeak input</value>
+  </data>
+  <data name="Errors.NotConnected" xml:space="preserve">
+    <value>TeamSpeak is not connected.</value>
+  </data>
+  <data name="Errors.ClientIdNotFound" xml:space="preserve">
+    <value>TeamSpeak client ID could not be determined.</value>
+  </data>
+  <data name="Actions.Errors.ToggleFailed" xml:space="preserve">
+    <value>Action could not be toggled.</value>
+  </data>
+  <data name="Actions.Errors.ToggleException" xml:space="preserve">
+    <value>Failed to toggle action.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ConnectClient.ApiKeyEmpty" xml:space="preserve">
+    <value>ConnectClient aborted: API key is empty.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ConnectClient.AlreadyConnected" xml:space="preserve">
+    <value>ConnectClient skipped: connection already exists.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ConnectClient.ConnectionTimeout" xml:space="preserve">
+    <value>Connection to TeamSpeak ClientQuery API timed out.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ConnectClient.UnexpectedWelcome" xml:space="preserve">
+    <value>Unexpected TeamSpeak welcome message: {0}</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ConnectClient.AuthenticationFailed" xml:space="preserve">
+    <value>Authentication failed: {0}</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ConnectClient.Connected" xml:space="preserve">
+    <value>TeamSpeak ClientQuery connected. ClientId={0}</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ConnectClient.ConnectFailed" xml:space="preserve">
+    <value>Failed to connect to TeamSpeak ClientQuery.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.GetClientId.NoConnection" xml:space="preserve">
+    <value>GetClientId failed: no active connection.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.GetClientId.NotFound" xml:space="preserve">
+    <value>GetClientId could not be determined.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.GetInputMuteStatus.NoConnection" xml:space="preserve">
+    <value>GetInputMuteStatus failed: no active connection.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.GetInputMuteStatus.InvalidResponse" xml:space="preserve">
+    <value>GetInputMuteStatus returned no valid response for clid={0}.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.SetInputMuteStatus.NoConnection" xml:space="preserve">
+    <value>SetInputMuteStatus failed: no active connection.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.SetInputMuteStatus.Success" xml:space="preserve">
+    <value>Input mute set to {0}.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.SetInputMuteStatus.Failed" xml:space="preserve">
+    <value>SetInputMuteStatus failed for value {0}.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.UpdateInputMuteVariable.Updated" xml:space="preserve">
+    <value>Input mute status updated: {0}</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.Disconnect.Failed" xml:space="preserve">
+    <value>Failed to close TeamSpeak connection.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.TelnetCommand.Failed" xml:space="preserve">
+    <value>Telnet command failed: {0}</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.Writer.NotInitialized" xml:space="preserve">
+    <value>Writer is not initialized.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.Writer.WriteTimeout" xml:space="preserve">
+    <value>Write timeout for command: {0}</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.Writer.FlushTimeout" xml:space="preserve">
+    <value>Flush timeout while writing to telnet socket.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.Reader.NotInitialized" xml:space="preserve">
+    <value>Reader is not initialized.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.Reader.ReadTimeout" xml:space="preserve">
+    <value>Read timeout while waiting for TeamSpeak response.</value>
+  </data>
+  <data name="Service.Teamspeak3Telnet.ParseInteger.Failed" xml:space="preserve">
+    <value>Failed to parse integer value from TeamSpeak response.</value>
+  </data>
+  <data name="Actions.ChangeNickname.Name" xml:space="preserve">
+    <value>Change nickname</value>
+  </data>
+  <data name="Actions.ChangeNickname.Description" xml:space="preserve">
+    <value>Changes your nickname to the given parameter</value>
+  </data>
+  <data name="Actions.ChangeNickname.NewNickname" xml:space="preserve">
+    <value>Your new nickname</value>
+  </data>
+  <data name="Errors.ActionCantBeDone" xml:space="preserve">
+    <value>The action can not be done</value>
+  </data>
+  <data name="Actions.OutputMute.Description" xml:space="preserve">
+    <value>Mutes or unmutes the teamspeak output</value>
+  </data>
+  <data name="Actions.OutputMute.Name" xml:space="preserve">
+    <value>Mute/Unmute Output</value>
+  </data>
+  <data name="Actions.SwitchChannel.Name" xml:space="preserve">
+    <value>Channel switch</value>
+  </data>
+  <data name="Actions.SwitchChannel.Description" xml:space="preserve">
+    <value>Switchs to a parameterized channel</value>
+  </data>
+</root>
