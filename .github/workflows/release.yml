@@ -12,5 +12,5 @@ jobs:
       id-token: write
     with:
       version: ${{ github.event.release.tag_name }}
-      source: src/HelloDeck
+      source: src/MacroDeck.Teamspeak3Plugin
       changelog: ${{ github.event.release.body }}
