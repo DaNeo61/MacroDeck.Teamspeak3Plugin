@@ -56,11 +56,6 @@ namespace MacroDeck.Teamspeak3Plugin
                 _ => VariableReading.Unavailable
             });
 
-        public ValueTask<VariableWriteResult> SetValueAsync(string localId, object? value, CancellationToken cancellationToken = default)
-        {
-            return ValueTask.FromResult(VariableWriteResult.Applied());
-        }
-
         public async Task InitializeAsync(IIntegrationContext context)
         {
             try
