@@ -42,9 +42,9 @@ namespace MacroDeck.Teamspeak3Plugin
 
         public IReadOnlyList<VariableDefinition> Variables { get; } =
         [
-            VariableDefinition.Eager("ts3-current-channel", VariableType.Text, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-current-channel", Write = new VariableWriteCapability() },
-            VariableDefinition.Eager("ts3-output-state", VariableType.Boolean, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-output-state", Write = new VariableWriteCapability() },
-            VariableDefinition.Eager("ts3-input-state", VariableType.Boolean, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-input-state", Write = new VariableWriteCapability() },
+            VariableDefinition.Eager("ts3-current-channel", VariableType.Text, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-current-channel" },
+            VariableDefinition.Eager("ts3-output-state", VariableType.Boolean, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-output-state" },
+            VariableDefinition.Eager("ts3-input-state", VariableType.Boolean, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-input-state" },
         ];
 
         public ValueTask<VariableReading> ReadAsync(string localId, CancellationToken cancellationToken = default) => ValueTask.FromResult(
