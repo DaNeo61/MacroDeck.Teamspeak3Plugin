@@ -18,7 +18,16 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
 
         public LocalizedText Description => Strings.Actions.InputMute.Description();
 
-        public IReadOnlyList<ActionParameter> Parameters => [];
+        public IReadOnlyList<ActionParameter> Parameters =>
+        [
+            ActionParameter.Choice(
+                "mode",
+                [
+                    new ActionParameterOption { Label = Strings.Actions.MuteMode.Toggle().ToString(), Value = "toggle" },
+                    new ActionParameterOption { Label = Strings.Actions.MuteMode.On().ToString(), Value = "on" },
+                    new ActionParameterOption { Label = Strings.Actions.MuteMode.Off().ToString(), Value = "off" },
+                ]),
+        ];
 
         public IActionExecutor CreateExecutor() => new Executor(_logger);
 
@@ -45,13 +54,23 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
                         return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.ClientIdNotFound().ToString()));
                     }
 
-                    var inputMuteStatus = Telnet.GetInputMuteStatus(cId);
-                    var changed = Telnet.SetInputMuteStatus(inputMuteStatus ? 0 : 1);
+                    var currentMuted = Telnet.GetInputMuteStatus(cId);
+                    var mode = (context.Parameters.GetValueOrDefault("mode") as string)?.Trim().ToLowerInvariant();
 
-                    VariableValue.Of("ts3-input-state", changed);
-                    return changed
-                        ? ActionResult.SucceededTask
-                        : Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Actions.Errors.ToggleFailed().ToString()));
+                    var targetMuted = mode switch
+                    {
+                        "on" => true,
+                        "off" => false,
+                        _ => !currentMuted,
+                    };
+
+                    var changed = Telnet.SetInputMuteStatus(targetMuted ? 1 : 0);
+                    if (changed)
+                    {
+                        return ActionResult.SucceededTask;
+                    }
+
+                    return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Actions.Errors.ToggleFailed().ToString()));
                 }
                 catch (Exception ex)
                 {

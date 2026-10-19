@@ -130,7 +130,7 @@
     <value>Interval to poll teamspeak query informations</value>
   </data>
   <data name="Actions.InputMute.Name" xml:space="preserve">
-    <value>Mute/Unmute Input</value>
+    <value>Mute/Unmute or Toggle the Input</value>
   </data>
   <data name="Actions.InputMute.Description" xml:space="preserve">
     <value>Mutes or unmutes the teamspeak input</value>
@@ -232,12 +232,24 @@
     <value>Mutes or unmutes the teamspeak output</value>
   </data>
   <data name="Actions.OutputMute.Name" xml:space="preserve">
-    <value>Mute/Unmute Output</value>
+    <value>Mute/Unmute or Toggle the Output</value>
   </data>
   <data name="Actions.SwitchChannel.Name" xml:space="preserve">
     <value>Channel switch</value>
   </data>
   <data name="Actions.SwitchChannel.Description" xml:space="preserve">
     <value>Switchs to a parameterized channel</value>
+  </data>
+  <data name="Actions.MuteMode.Label" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Actions.MuteMode.Toggle" xml:space="preserve">
+    <value>Toggle</value>
+  </data>
+  <data name="Actions.MuteMode.On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Actions.MuteMode.Off" xml:space="preserve">
+    <value>Off</value>
   </data>
 </root>
