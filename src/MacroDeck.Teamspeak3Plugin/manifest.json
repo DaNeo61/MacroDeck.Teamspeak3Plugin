@@ -5,7 +5,7 @@
   "name": "Teamspeak3Plugin",
   "version": "0.5.0",
   "description": "A plugin to control teamspeak 3 via macrodeck",
-  "icon": "Assets/icon.svg",
+  "icon": "Assets/icon.png",
   "entrypoints": {
     "win-x64": {
       "executable": "runtimes/win-x64/MacroDeck.Teamspeak3Plugin.dll",
