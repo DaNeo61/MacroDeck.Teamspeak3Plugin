@@ -7,9 +7,27 @@
   "description": "A plugin to control teamspeak 3 via macrodeck",
   "icon": "Assets/icon.svg",
   "entrypoints": {
-    "win-x64": { "executable": "runtimes/win-x64/MacroDeck.Teamspeak3Plugin.dll", "runtime": { "kind": "FrameworkDependent", "dotnetVersion": "10.0" } },
-    "osx-arm64": { "executable": "runtimes/osx-arm64/MacroDeck.Teamspeak3Plugin.dll", "runtime": { "kind": "FrameworkDependent", "dotnetVersion": "10.0" } },
-    "linux-x64": { "executable": "runtimes/linux-x64/MacroDeck.Teamspeak3Plugin.dll", "runtime": { "kind": "FrameworkDependent", "dotnetVersion": "10.0" } }
+    "win-x64": {
+      "executable": "runtimes/win-x64/MacroDeck.Teamspeak3Plugin.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    },
+    "osx-arm64": {
+      "executable": "runtimes/osx-arm64/MacroDeck.Teamspeak3Plugin.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    },
+    "linux-x64": {
+      "executable": "runtimes/linux-x64/MacroDeck.Teamspeak3Plugin.dll",
+      "runtime": {
+        "kind": "FrameworkDependent",
+        "dotnetVersion": "10.0"
+      }
+    }
   },
   "publisher": {
     "name": "DaNeo"
@@ -19,5 +37,10 @@
   "homepage": "https://www.daneo.pro/",
   "compatibility": {
     "macroDeck": ">=3.0.0-0"
+  },
+  "ai": {
+    "interaction": false,
+    "generatedContent": false,
+    "generatedAssets": false
   }
 }
