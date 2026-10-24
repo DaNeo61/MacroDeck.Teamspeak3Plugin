@@ -25,11 +25,29 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
         public static Teamspeak3Telnet Instance => _instance;
 
-        public int ClientId { get; private set; } = -1;
+        private volatile int _clientId = -1;
+
+        public int ClientId { get => _clientId; private set => _clientId = value; }
 
         public bool IsConnected => _client?.Connected == true && _reader is not null && _writer is not null;
 
         public bool HasApiKey => _apiKey is not null;
+
+        public string? ApiKey
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _apiKey;
+                }
+            }
+        }
+
+        // Both are raised outside the lock so a handler may call back into this class.
+        public event EventHandler? ApiKeyChanged;
+
+        public event EventHandler? Connected;
 
         private Teamspeak3Telnet()
         {
@@ -49,6 +67,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                 throw new TimeoutException(L(Strings.Service.Teamspeak3Telnet.ConnectClient.ApiKeyEmpty()));
             }
 
+            string? previousKey;
             lock (_lock)
             {
                 if (IsConnected && !forceConnect && apiKey == _apiKey)
@@ -57,10 +76,10 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     return true;
                 }
 
+                previousKey = _apiKey;
                 try
                 {
                     ConnectInternal(apiKey);
-                    return true;
                 }
                 catch (Exception ex)
                 {
@@ -68,6 +87,14 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     throw;
                 }
             }
+
+            if (previousKey != apiKey)
+            {
+                ApiKeyChanged?.Invoke(this, EventArgs.Empty);
+            }
+
+            Connected?.Invoke(this, EventArgs.Empty);
+            return true;
         }
 
         public void UseApiKey(string? apiKey)
@@ -83,6 +110,8 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                 _apiKey = normalized;
                 DisconnectInternal();
             }
+
+            ApiKeyChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public bool EnsureConnected() => TryReconnect(out _);
@@ -106,7 +135,6 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                 try
                 {
                     ConnectInternal(_apiKey);
-                    return true;
                 }
                 catch (Exception ex)
                 {
@@ -114,6 +142,9 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     return false;
                 }
             }
+
+            Connected?.Invoke(this, EventArgs.Empty);
+            return true;
         }
 
         public bool CheckConnection()
@@ -491,11 +522,19 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
         public void Dispose()
         {
+            bool hadApiKey;
             lock (_lock)
             {
+                hadApiKey = _apiKey is not null;
                 _apiKey = null;
                 DisconnectInternal();
             }
+
+            if (hadApiKey)
+            {
+                ApiKeyChanged?.Invoke(this, EventArgs.Empty);
+            }
+
             GC.SuppressFinalize(this);
         }
 
@@ -534,7 +573,8 @@ namespace MacroDeck.Teamspeak3Plugin.Service
             }
             catch (Exception ex)
             {
-                _logger?.Warning(ex, LF(Strings.Service.Teamspeak3Telnet.TelnetCommand.Failed(), command));
+                // Only the command name: arguments can carry the API key or a channel password.
+                _logger?.Warning(ex, LF(Strings.Service.Teamspeak3Telnet.TelnetCommand.Failed(), command.Split(' ')[0]));
                 DisconnectInternal();
                 return string.Empty;
             }
@@ -637,7 +677,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
             return string.Join("\n", lines);
         }
 
-        private static string Escape(string value)
+        internal static string Escape(string value)
             => value
                 .Replace("\\", "\\\\", StringComparison.Ordinal)
                 .Replace("/", "\\/", StringComparison.Ordinal)

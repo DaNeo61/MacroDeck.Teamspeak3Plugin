@@ -12,7 +12,7 @@ var builder = MacroDeckPlugin.CreatePlugin(args)
     .UseLocalization(Strings.LocalizationCatalog)
     .RegisterIntegration<PluginIntegration>();
 
-builder.Services.AddHostedService<Teamspeak3ConnectionMonitor>();
+builder.Services.AddTeamspeak3Connection();
 
 var plugin = builder.Build();
 
