@@ -247,9 +247,18 @@
     <value>Toggle</value>
   </data>
   <data name="Actions.MuteMode.On" xml:space="preserve">
-    <value>On</value>
+    <value>Mute</value>
   </data>
   <data name="Actions.MuteMode.Off" xml:space="preserve">
-    <value>Off</value>
+    <value>Unmute</value>
+  </data>
+  <data name="Actions.SwitchChannel.Channel.Label" xml:space="preserve">
+    <value>Channel</value>
+  </data>
+  <data name="Actions.SwitchChannel.Password.Label" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Actions.SwitchChannel.Password.Description" xml:space="preserve">
+    <value>Only needed if the channel has a password</value>
   </data>
 </root>

@@ -19,8 +19,8 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
 
         public IReadOnlyList<ActionParameter> Parameters => 
         [
-            ActionParameter.DynamicChoice("channel-list", "Channel", ""),
-            ActionParameter.Secret("channel-password", "Password", "If the channel has an Password")    
+            ActionParameter.DynamicChoice("channel-list", Strings.Actions.SwitchChannel.Channel.Label()),
+            ActionParameter.Secret("channel-password", Strings.Actions.SwitchChannel.Password.Label(), Strings.Actions.SwitchChannel.Password.Description())
         ];
 
         public IActionExecutor CreateExecutor() => new Executor(_logger);
@@ -56,13 +56,13 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
                 {
                     if (!Telnet.EnsureConnected())
                     {
-                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.NotConnected().ToString()));
+                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.NotConnected()));
                     }
 
                     var cId = Telnet.GetClientId();
                     if (cId == -1)
                     {
-                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.ClientIdNotFound().ToString()));
+                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.ClientIdNotFound()));
                     }
                     var changed = false;
                     var channelId = context.Parameters.GetValueOrDefault("channel-list") as string;
@@ -70,11 +70,11 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
                     if(!string.IsNullOrEmpty(channelId) && int.TryParse(channelId, out var parsedId))
                         changed = Telnet.ChannelSwitch(parsedId, cId, channelPw);
 
-                    return changed ? ActionResult.SucceededTask : Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Actions.Errors.ToggleFailed().ToString()));
+                    return changed ? ActionResult.SucceededTask : Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Actions.Errors.ToggleFailed()));
                 }
                 catch (Exception ex)
                 {
-                    _logger.Warning(ex, Strings.Actions.Errors.ToggleException().ToString());
+                    _logger.Warning(ex, "Failed to switch the channel");
                     return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, ex.Message));
                 }
             }
