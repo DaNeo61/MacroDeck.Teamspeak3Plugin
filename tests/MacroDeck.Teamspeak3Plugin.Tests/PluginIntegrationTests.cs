@@ -1,4 +1,5 @@
 using MacroDeck.Plugin.Testing;
+using MacroDeck.Teamspeak3Plugin.Service;
 using NUnit.Framework;
 
 namespace MacroDeck.Teamspeak3Plugin.Tests;
@@ -11,9 +12,13 @@ namespace MacroDeck.Teamspeak3Plugin.Tests;
 public sealed class PluginIntegrationTests
 {
 	private static PluginTestHarness CreateHarness() =>
-		PluginTestHarness.Create(builder => builder
-			.UseLocalization(Strings.LocalizationCatalog)
-			.RegisterIntegration<PluginIntegration>());
+		PluginTestHarness.Create(builder =>
+		{
+			builder.Services.AddTeamspeak3Connection();
+			builder
+				.UseLocalization(Strings.LocalizationCatalog)
+				.RegisterIntegration<PluginIntegration>();
+		});
 
 	[Test]
 	public async Task The_plugin_builds_and_initializes()

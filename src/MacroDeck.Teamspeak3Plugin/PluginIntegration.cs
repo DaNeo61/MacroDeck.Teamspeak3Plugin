@@ -2,6 +2,7 @@ using MacroDeck.Sdk;
 using MacroDeck.Sdk.Actions;
 using MacroDeck.Sdk.ConfigFlow;
 using MacroDeck.Sdk.Variables;
+using MacroDeck.Teamspeak3Plugin.Model;
 using MacroDeck.Teamspeak3Plugin.Service;
 using Serilog;
 using System.Reflection;
@@ -12,11 +13,17 @@ namespace MacroDeck.Teamspeak3Plugin
 {
     public sealed class PluginIntegration : IPluginIntegration, IVariableProvider, IUiConfigFlowProvider
     {
-        private readonly ILogger _logger;
+        // Notifications trigger an immediate read; polling only catches anything a notification missed.
+        private static readonly TimeSpan FallbackRefreshInterval = TimeSpan.FromSeconds(30);
 
-        public PluginIntegration(ILogger logger)
+        private readonly ILogger _logger;
+        private readonly Teamspeak3NotificationListener _notifications;
+        private volatile IIntegrationContext? _context;
+
+        public PluginIntegration(ILogger logger, Teamspeak3NotificationListener notifications)
         {
             _logger = logger.ForContext<PluginIntegration>();
+            _notifications = notifications;
             Teamspeak3Telnet.Instance.WithLogger(logger);
 
             //Init Subclasses
@@ -42,22 +49,26 @@ namespace MacroDeck.Teamspeak3Plugin
 
         public IReadOnlyList<VariableDefinition> Variables { get; } =
         [
-            VariableDefinition.Eager("ts3-current-channel", VariableType.Text, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-current-channel" },
-            VariableDefinition.Eager("ts3-output-state", VariableType.Boolean, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-output-state" },
-            VariableDefinition.Eager("ts3-input-state", VariableType.Boolean, refreshInterval: TimeSpan.FromSeconds(5)) with { Id = "ts3-input-state" },
+            VariableDefinition.Eager(VariableIds.CurrentChannel, VariableType.Text, refreshInterval: FallbackRefreshInterval) with { Id = VariableIds.CurrentChannel },
+            VariableDefinition.Eager(VariableIds.OutputState, VariableType.Boolean, refreshInterval: FallbackRefreshInterval) with { Id = VariableIds.OutputState },
+            VariableDefinition.Eager(VariableIds.InputState, VariableType.Boolean, refreshInterval: FallbackRefreshInterval) with { Id = VariableIds.InputState },
         ];
 
         public ValueTask<VariableReading> ReadAsync(string localId, CancellationToken cancellationToken = default) => ValueTask.FromResult(
             localId switch
             {
-                "ts3-current-channel" => VariableReading.Of(Teamspeak3Telnet.Instance.CurrentChannelVariable()),
-                "ts3-output-state" => VariableReading.Of(Teamspeak3Telnet.Instance.OutputMuteVariable()),
-                "ts3-input-state" => VariableReading.Of(Teamspeak3Telnet.Instance.InputMuteVariable()),
+                VariableIds.CurrentChannel => VariableReading.Of(Teamspeak3Telnet.Instance.CurrentChannelVariable()),
+                VariableIds.OutputState => VariableReading.Of(Teamspeak3Telnet.Instance.OutputMuteVariable()),
+                VariableIds.InputState => VariableReading.Of(Teamspeak3Telnet.Instance.InputMuteVariable()),
                 _ => VariableReading.Unavailable
             });
 
         public async Task InitializeAsync(IIntegrationContext context)
         {
+            _context = context;
+            _notifications.VariablesChanged -= OnVariablesChanged;
+            _notifications.VariablesChanged += OnVariablesChanged;
+
             try
             {
                 var entries = await context.Config.GetEntriesAsync();
@@ -102,8 +113,31 @@ namespace MacroDeck.Teamspeak3Plugin
 
         public Task ShutdownAsync()
         {
+            _notifications.VariablesChanged -= OnVariablesChanged;
+            _context = null;
             Teamspeak3Telnet.Instance.Dispose();
             return Task.CompletedTask;
+        }
+
+        private void OnVariablesChanged(object? sender, VariablesChangedEventArgs e)
+        {
+            var context = _context;
+            if (context is not null)
+            {
+                _ = RequestRefreshAsync(context, e.VariableIds);
+            }
+        }
+
+        private async Task RequestRefreshAsync(IIntegrationContext context, IReadOnlyCollection<string> variableIds)
+        {
+            try
+            {
+                await context.Variables.RequestDefinitionRefreshAsync(variableIds, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "Could not request a refresh of {VariableIds}", variableIds);
+            }
         }
 
     }
