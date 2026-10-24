@@ -27,6 +27,16 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
         private volatile int _clientId = -1;
 
+        private const int MuteStateUnknown = -1;
+        private volatile int _inputMuted = MuteStateUnknown;
+        private volatile int _outputMuted = MuteStateUnknown;
+
+        // Last known mute states, kept current by reads, own changes and notifications so that button
+        // state polls never need a ClientQuery round trip.
+        public bool? InputMuted => FromStoredMuteState(_inputMuted);
+
+        public bool? OutputMuted => FromStoredMuteState(_outputMuted);
+
         public int ClientId { get => _clientId; private set => _clientId = value; }
 
         public bool IsConnected => _client?.Connected == true && _reader is not null && _writer is not null;
@@ -164,10 +174,49 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
                 // The ClientQuery socket survives the TeamSpeak client reconnecting to a server, but the
                 // client id changes with it, so the cached id is refreshed on every check.
+                var previousClientId = ClientId;
                 ClientId = response.Contains("msg=ok", StringComparison.Ordinal) && TryParseKeyIntValue(response, "clid=", out var clid) ? clid : -1;
+                if (ClientId == -1)
+                {
+                    ResetMuteStates();
+                }
+                else if (ClientId != previousClientId || InputMuted is null || OutputMuted is null)
+                {
+                    RefreshMuteStates();
+                }
+
                 return true;
             }
         }
+
+        public void ApplyMuteNotification(bool? inputMuted, bool? outputMuted)
+        {
+            if (inputMuted.HasValue)
+            {
+                _inputMuted = ToStoredMuteState(inputMuted.Value);
+            }
+
+            if (outputMuted.HasValue)
+            {
+                _outputMuted = ToStoredMuteState(outputMuted.Value);
+            }
+        }
+
+        private void RefreshMuteStates()
+        {
+            GetInputMuteStatus(ClientId);
+            GetOutputMuteStatus(ClientId);
+        }
+
+        private void ResetMuteStates()
+        {
+            _inputMuted = MuteStateUnknown;
+            _outputMuted = MuteStateUnknown;
+        }
+
+        private static int ToStoredMuteState(bool muted) => muted ? 1 : 0;
+
+        private static bool? FromStoredMuteState(int state) => state == MuteStateUnknown ? null : state == 1;
 
         private void ConnectInternal(string apiKey)
         {
@@ -202,6 +251,11 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
                 _apiKey = apiKey;
                 ClientId = GetClientId();
+                if (ClientId != -1)
+                {
+                    RefreshMuteStates();
+                }
+
                 _logger?.Information(LF(Strings.Service.Teamspeak3Telnet.ConnectClient.Connected(), ClientId));
             }
             catch
@@ -395,6 +449,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     var response = GetTelnetResponse($"clientvariable clid={clientId} client_input_muted");
                     if (response.Contains("msg=ok", StringComparison.Ordinal) && TryParseKeyIntValue(response, "client_input_muted=", out var state))
                     {
+                        _inputMuted = ToStoredMuteState(state == 1);
                         return state == 1;
                     }
                 }
@@ -419,6 +474,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     var response = GetTelnetResponse($"clientupdate client_input_muted={inputMuteStatus}");
                     if (response.Contains("msg=ok", StringComparison.Ordinal))
                     {
+                        _inputMuted = ToStoredMuteState(inputMuteStatus == 1);
                         _logger?.Information(LF(Strings.Service.Teamspeak3Telnet.SetInputMuteStatus.Success(), inputMuteStatus));
                         return true;
                     }
@@ -450,7 +506,10 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     {
                         var outputMuteStatusResponse = GetTelnetResponse($"clientvariable clid={clientId} client_output_muted");
                         if (outputMuteStatusResponse.Contains("msg=ok") && TryParseKeyIntValue(outputMuteStatusResponse, "client_output_muted=", out var state))
+                        {
+                            _outputMuted = ToStoredMuteState(state == 1);
                             return state == 1;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -474,7 +533,10 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     {
                         var setOutputMuteStatusResponse = GetTelnetResponse($"clientupdate client_output_muted={outputMuteStatus}");
                         if (setOutputMuteStatusResponse.Contains("msg=ok"))
+                        {
+                            _outputMuted = ToStoredMuteState(outputMuteStatus == 1);
                             return true;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -556,6 +618,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                 _reader = null;
                 _client = null;
                 ClientId = -1;
+                ResetMuteStates();
             }
         }
 

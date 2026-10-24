@@ -168,6 +168,8 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                 return;
             }
 
+            Teamspeak3Telnet.Instance.ApplyMuteNotification(notification.InputMuted, notification.OutputMuted);
+
             if (notification.ServerConnectionChanged)
             {
                 // The own client id changes with the server connection; refresh it before the variables are read.

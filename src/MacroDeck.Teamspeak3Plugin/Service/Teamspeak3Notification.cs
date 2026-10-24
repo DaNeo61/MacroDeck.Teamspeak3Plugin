@@ -2,7 +2,11 @@ using MacroDeck.Teamspeak3Plugin.Model;
 
 namespace MacroDeck.Teamspeak3Plugin.Service
 {
-    internal sealed record Teamspeak3Notification(IReadOnlyCollection<string> AffectedVariableIds, bool ServerConnectionChanged)
+    internal sealed record Teamspeak3Notification(
+        IReadOnlyCollection<string> AffectedVariableIds,
+        bool ServerConnectionChanged,
+        bool? InputMuted = null,
+        bool? OutputMuted = null)
     {
         public static readonly IReadOnlyList<string> RegisteredEvents =
         [
@@ -47,20 +51,24 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
                 case "notifyclientupdated":
                     var ids = new HashSet<string>(StringComparer.Ordinal);
+                    bool? inputMuted = null;
+                    bool? outputMuted = null;
                     foreach (var entry in entries.Where(e => IsOwnClient(e, ownClientId)))
                     {
-                        if (entry.ContainsKey("client_input_muted"))
+                        if (entry.TryGetValue("client_input_muted", out var input))
                         {
                             ids.Add(VariableIds.InputState);
+                            inputMuted = input == "1";
                         }
 
-                        if (entry.ContainsKey("client_output_muted"))
+                        if (entry.TryGetValue("client_output_muted", out var output))
                         {
                             ids.Add(VariableIds.OutputState);
+                            outputMuted = output == "1";
                         }
                     }
 
-                    return ids.Count == 0 ? None : new Teamspeak3Notification(ids, false);
+                    return ids.Count == 0 ? None : new Teamspeak3Notification(ids, false, inputMuted, outputMuted);
 
                 default:
                     return None;

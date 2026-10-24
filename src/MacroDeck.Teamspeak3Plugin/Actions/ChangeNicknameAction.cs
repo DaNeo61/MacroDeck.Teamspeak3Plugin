@@ -37,13 +37,13 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
                 {
                     if (!Telnet.EnsureConnected())
                     {
-                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.NotConnected().ToString()));
+                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.NotConnected()));
                     }
 
                     var cId = Telnet.GetClientId();
                     if (cId == -1)
                     {
-                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.ClientIdNotFound().ToString()));
+                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.ClientIdNotFound()));
                     }
 
                     var newNickname = context.Parameters.GetValueOrDefault("new_nickname") as string;
@@ -53,7 +53,7 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
                 }
                 catch (Exception ex)
                 {
-                    _logger.Warning(ex, Strings.Errors.ActionCantBeDone().ToString());
+                    _logger.Warning(ex, "Failed to change the nickname");
                     return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, ex.Message));
                 }
             }
