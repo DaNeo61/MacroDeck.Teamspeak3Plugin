@@ -1,3 +1,5 @@
+<a href="https://macro-deck.app/store/pro.daneo.teamspeak3plugin"><img alt="Open in the Macro Deck Store" src="https://assets.macro-deck.app/branding/Open%20in%20the%20Macro%20Deck%20Store%20Badge%20Dark.png" height="56"></a>
+
 # Teamspeak3Plugin
 Teamspeak 3 Client Integration Plugin for Macro Deck 3
 
