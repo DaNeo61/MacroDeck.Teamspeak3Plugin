@@ -192,4 +192,21 @@
   <data name="Errors.ActionCantBeDone" xml:space="preserve">
     <value>Die Aktion kann nicht ausgeführt werden.</value>
   </data>
+  <data name="Widgets.CurrentChannel.Name" xml:space="preserve">
+    <value>TeamSpeak-Channel</value>
+  </data>
+  <data name="Widgets.CurrentChannel.Description" xml:space="preserve">
+    <value>Zeigt deinen aktuellen TeamSpeak-Channel und wer darin ist, mit Live-Anzeige für Sprechen und Stummschaltung</value>
+  </data>
+  <data name="Widgets.CurrentChannel.NotConnected" xml:space="preserve">
+    <value>Nicht verbunden</value>
+  </data>
+  <data name="Widgets.CurrentChannel.More.One" xml:space="preserve">
+    <value>+{count} weiterer Nutzer</value>
+    <comment>[plural]</comment>
+  </data>
+  <data name="Widgets.CurrentChannel.More.Other" xml:space="preserve">
+    <value>+{count} weitere Nutzer</value>
+    <comment>[plural]</comment>
+  </data>
 </root>
