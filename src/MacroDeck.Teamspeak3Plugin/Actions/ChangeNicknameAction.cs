@@ -35,7 +35,7 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
             {
                 try
                 {
-                    if (!Telnet.IsConnected)
+                    if (!Telnet.EnsureConnected())
                     {
                         return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.NotConnected().ToString()));
                     }

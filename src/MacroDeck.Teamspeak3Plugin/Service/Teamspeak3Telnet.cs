@@ -18,6 +18,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
         private StreamReader? _reader;
         private StreamWriter? _writer;
         private ILogger? _logger;
+        private string? _apiKey;
 
         private const int CommandTimeoutMs = 2000;
         private const int RetryCount = 10;
@@ -27,6 +28,8 @@ namespace MacroDeck.Teamspeak3Plugin.Service
         public int ClientId { get; private set; } = -1;
 
         public bool IsConnected => _client?.Connected == true && _reader is not null && _writer is not null;
+
+        public bool HasApiKey => _apiKey is not null;
 
         private Teamspeak3Telnet()
         {
@@ -48,7 +51,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
             lock (_lock)
             {
-                if (IsConnected && !forceConnect)
+                if (IsConnected && !forceConnect && apiKey == _apiKey)
                 {
                     _logger?.Debug(L(Strings.Service.Teamspeak3Telnet.ConnectClient.AlreadyConnected()));
                     return true;
@@ -56,48 +59,124 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
                 try
                 {
-                    DisconnectInternal();
-
-                    _client = new TcpClient();
-                    var connectTask = _client.ConnectAsync("127.0.0.1", 25639);
-                    if (!connectTask.Wait(CommandTimeoutMs))
-                    {
-                        throw new TimeoutException(L(Strings.Service.Teamspeak3Telnet.ConnectClient.ConnectionTimeout()));
-                    }
-
-                    var stream = _client.GetStream();
-                    stream.ReadTimeout = CommandTimeoutMs;
-                    stream.WriteTimeout = CommandTimeoutMs;
-                    _reader = new StreamReader(stream);
-                    _writer = new StreamWriter(stream) { AutoFlush = true };
-
-                    var welcome = ReadWelcomeWithTimeout();
-                    if (string.IsNullOrWhiteSpace(welcome) || !welcome.Contains("TS3 Client", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var message = LF(Strings.Service.Teamspeak3Telnet.ConnectClient.UnexpectedWelcome(), welcome);
-                        _logger?.Warning(message);
-                        throw new InvalidOperationException(message);
-                    }
-
-                    var authResponse = GetTelnetResponse($"auth apikey={Escape(apiKey)}");
-                    if (!authResponse.Contains("msg=ok", StringComparison.Ordinal))
-                    {
-                        var message = LF(Strings.Service.Teamspeak3Telnet.ConnectClient.AuthenticationFailed(), authResponse);
-                        _logger?.Warning(message);
-                        DisconnectInternal();
-                        throw new InvalidOperationException(message);
-                    }
-
-                    ClientId = GetClientId();
-                    _logger?.Information(LF(Strings.Service.Teamspeak3Telnet.ConnectClient.Connected(), ClientId));
+                    ConnectInternal(apiKey);
                     return true;
                 }
                 catch (Exception ex)
                 {
                     _logger?.Error(ex, L(Strings.Service.Teamspeak3Telnet.ConnectClient.ConnectFailed()));
-                    DisconnectInternal();
                     throw;
                 }
+            }
+        }
+
+        public void UseApiKey(string? apiKey)
+        {
+            lock (_lock)
+            {
+                var normalized = string.IsNullOrWhiteSpace(apiKey) ? null : apiKey;
+                if (normalized == _apiKey)
+                {
+                    return;
+                }
+
+                _apiKey = normalized;
+                DisconnectInternal();
+            }
+        }
+
+        public bool EnsureConnected() => TryReconnect(out _);
+
+        public bool TryReconnect(out string? error)
+        {
+            lock (_lock)
+            {
+                error = null;
+                if (IsConnected)
+                {
+                    return true;
+                }
+
+                if (_apiKey is null)
+                {
+                    error = "No API key configured.";
+                    return false;
+                }
+
+                try
+                {
+                    ConnectInternal(_apiKey);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    error = ex.Message;
+                    return false;
+                }
+            }
+        }
+
+        public bool CheckConnection()
+        {
+            lock (_lock)
+            {
+                if (!IsConnected)
+                {
+                    return false;
+                }
+
+                var response = GetTelnetResponse("whoami");
+                if (!IsConnected)
+                {
+                    return false;
+                }
+
+                // The ClientQuery socket survives the TeamSpeak client reconnecting to a server, but the
+                // client id changes with it, so the cached id is refreshed on every check.
+                ClientId = response.Contains("msg=ok", StringComparison.Ordinal) && TryParseKeyIntValue(response, "clid=", out var clid) ? clid : -1;
+                return true;
+            }
+        }
+
+        private void ConnectInternal(string apiKey)
+        {
+            try
+            {
+                DisconnectInternal();
+
+                _client = new TcpClient();
+                var connectTask = _client.ConnectAsync("127.0.0.1", 25639);
+                if (!connectTask.Wait(CommandTimeoutMs))
+                {
+                    throw new TimeoutException(L(Strings.Service.Teamspeak3Telnet.ConnectClient.ConnectionTimeout()));
+                }
+
+                var stream = _client.GetStream();
+                stream.ReadTimeout = CommandTimeoutMs;
+                stream.WriteTimeout = CommandTimeoutMs;
+                _reader = new StreamReader(stream);
+                _writer = new StreamWriter(stream) { AutoFlush = true };
+
+                var welcome = ReadWelcomeWithTimeout();
+                if (string.IsNullOrWhiteSpace(welcome) || !welcome.Contains("TS3 Client", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(LF(Strings.Service.Teamspeak3Telnet.ConnectClient.UnexpectedWelcome(), welcome));
+                }
+
+                var authResponse = GetTelnetResponse($"auth apikey={Escape(apiKey)}");
+                if (!authResponse.Contains("msg=ok", StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(LF(Strings.Service.Teamspeak3Telnet.ConnectClient.AuthenticationFailed(), authResponse));
+                }
+
+                _apiKey = apiKey;
+                ClientId = GetClientId();
+                _logger?.Information(LF(Strings.Service.Teamspeak3Telnet.ConnectClient.Connected(), ClientId));
+            }
+            catch
+            {
+                DisconnectInternal();
+                throw;
             }
         }
 
@@ -414,6 +493,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
         {
             lock (_lock)
             {
+                _apiKey = null;
                 DisconnectInternal();
             }
             GC.SuppressFinalize(this);
@@ -504,7 +584,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
                 if (line is null)
                 {
-                    break;
+                    throw new IOException("The TeamSpeak client closed the ClientQuery connection.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(line))
