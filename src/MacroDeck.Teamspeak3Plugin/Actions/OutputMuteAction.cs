@@ -6,7 +6,7 @@ using Serilog;
 
 namespace MacroDeck.Teamspeak3Plugin.Actions
 {
-    internal class OutputMuteAction : IActionDefinition
+    internal class OutputMuteAction : IActionDefinition, IStateProviderActionDefinition
     {
         public string Id => "output-mute";
 
@@ -18,18 +18,14 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
 
         public LocalizedText Description => Strings.Actions.OutputMute.Description();
 
-        public IReadOnlyList<ActionParameter> Parameters =>
-        [
-            ActionParameter.Choice(
-                "mode",
-                [
-                    new ActionParameterOption { Label = Strings.Actions.MuteMode.Toggle().ToString(), Value = "toggle" },
-                    new ActionParameterOption { Label = Strings.Actions.MuteMode.On().ToString(), Value = "on" },
-                    new ActionParameterOption { Label = Strings.Actions.MuteMode.Off().ToString(), Value = "off" },
-                ]),
-        ];
+        public IReadOnlyList<ActionParameter> Parameters => [MuteActionStates.ModeParameter];
+
+        public TimeSpan StatePollInterval => MuteActionStates.PollInterval;
 
         public IActionExecutor CreateExecutor() => new Executor(_logger);
+
+        public Task<ActionStateSnapshot?> GetActionStateAsync(IReadOnlyDictionary<string, object?> parameters, CancellationToken cancellationToken)
+            => MuteActionStates.SnapshotFor(Teamspeak3Telnet.Instance.OutputMuted);
 
         private sealed class Executor : IActionExecutor
         {
@@ -45,13 +41,13 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
                 {
                     if (!Telnet.EnsureConnected())
                     {
-                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.NotConnected().ToString()));
+                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.NotConnected()));
                     }
 
                     var cId = Telnet.GetClientId();
                     if (cId == -1)
                     {
-                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.ClientIdNotFound().ToString()));
+                        return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Errors.ClientIdNotFound()));
                     }
 
                     var currentMuted = Telnet.GetOutputMuteStatus(cId);
@@ -67,14 +63,14 @@ namespace MacroDeck.Teamspeak3Plugin.Actions
                     var changed = Telnet.SetOutputMuteStatus(targetMuted ? 1 : 0);
                     if (changed)
                     {
-                        return ActionResult.SucceededTask;
+                        return Task.FromResult(ActionResult.Success(MuteActionStates.StateIdFor(targetMuted)));
                     }
 
-                    return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Actions.Errors.ToggleFailed().ToString()));
+                    return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, Strings.Actions.Errors.ToggleFailed()));
                 }
                 catch (Exception ex)
                 {
-                    _logger.Warning(ex, Strings.Actions.Errors.ToggleException().ToString());
+                    _logger.Warning(ex, "Failed to change the output mute state");
                     return Task.FromResult(ActionResult.Failed(ActionErrorCodes.NotConnected, ex.Message));
                 }
             }
