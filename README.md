@@ -12,6 +12,10 @@ Teamspeak 3 Client Integration Plugin for Macro Deck 3
 - Output State (un-/muted)
 - Current Channelname
 
+Variables update as soon as TeamSpeak reports a change through ClientQuery notifications. A poll every
+30 seconds is only the fallback. The plugin talks to the local TeamSpeak client only (`127.0.0.1:25639`)
+and keeps two ClientQuery connections open: one for commands, one for notifications.
+
 ## Planned Features
 ### Actions
 - Away Options
