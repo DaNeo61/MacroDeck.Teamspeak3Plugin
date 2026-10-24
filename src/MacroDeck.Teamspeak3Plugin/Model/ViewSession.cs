@@ -30,7 +30,7 @@ namespace MacroDeck.Teamspeak3Plugin.Model
 
         public ValueTask DisposeAsync()
         {
-            //_view.Dispose();
+            _view.Dispose();
             return ValueTask.CompletedTask;
         }
     }

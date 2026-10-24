@@ -261,4 +261,21 @@
   <data name="Actions.SwitchChannel.Password.Description" xml:space="preserve">
     <value>Only needed if the channel has a password</value>
   </data>
+  <data name="Widgets.CurrentChannel.Name" xml:space="preserve">
+    <value>TeamSpeak channel</value>
+  </data>
+  <data name="Widgets.CurrentChannel.Description" xml:space="preserve">
+    <value>Shows your current TeamSpeak channel and who is in it, with live speaking and mute indicators</value>
+  </data>
+  <data name="Widgets.CurrentChannel.NotConnected" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+  <data name="Widgets.CurrentChannel.More.One" xml:space="preserve">
+    <value>+{count} more user</value>
+    <comment>[plural]</comment>
+  </data>
+  <data name="Widgets.CurrentChannel.More.Other" xml:space="preserve">
+    <value>+{count} more users</value>
+    <comment>[plural]</comment>
+  </data>
 </root>
