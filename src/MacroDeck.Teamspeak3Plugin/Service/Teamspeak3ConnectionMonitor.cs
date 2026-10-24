@@ -6,8 +6,9 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 {
     internal sealed class Teamspeak3ConnectionMonitor : BackgroundService
     {
+        // A failed attempt is an instantly refused loopback connection, so retrying at the check interval
+        // costs nothing and brings TeamSpeak back within seconds of a restart.
         private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(5);
-        private static readonly TimeSpan MaxRetryInterval = TimeSpan.FromSeconds(60);
 
         private readonly ILogger _logger;
         private readonly FailureEpisodeTracker _failures = new(null, TimeProvider.System);
@@ -16,29 +17,28 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var delay = CheckInterval;
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(delay, stoppingToken);
+                    await Task.Delay(CheckInterval, stoppingToken);
                 }
                 catch (OperationCanceledException)
                 {
                     return;
                 }
 
-                delay = CheckOrReconnect() ? CheckInterval : NextRetryInterval(delay);
+                CheckOrReconnect();
             }
         }
 
-        private bool CheckOrReconnect()
+        private void CheckOrReconnect()
         {
             var telnet = Teamspeak3Telnet.Instance;
             if (!telnet.HasApiKey)
             {
                 _failures.RecordSuccess();
-                return true;
+                return;
             }
 
             if (telnet.CheckConnection() || telnet.TryReconnect(out var error))
@@ -49,7 +49,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     _logger.Information("Reconnected to the TeamSpeak ClientQuery after {Failures} failed attempts over {Duration}", end.Failures, end.Duration);
                 }
 
-                return true;
+                return;
             }
 
             var signal = _failures.RecordFailure(error ?? "Unknown error");
@@ -62,14 +62,6 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     _logger.Warning("Still unable to reconnect to the TeamSpeak ClientQuery after {Failures} attempts over {Duration}: {Error}", signal.ConsecutiveFailures, signal.Duration, signal.LastError);
                     break;
             }
-
-            return false;
-        }
-
-        private static TimeSpan NextRetryInterval(TimeSpan current)
-        {
-            var next = current * 2;
-            return next > MaxRetryInterval ? MaxRetryInterval : next;
         }
     }
 }
