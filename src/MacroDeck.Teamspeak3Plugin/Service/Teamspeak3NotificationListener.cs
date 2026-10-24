@@ -15,8 +15,8 @@ namespace MacroDeck.Teamspeak3Plugin.Service
         private const int Port = 25639;
         private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(2);
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(60);
-        private static readonly TimeSpan MinRetryInterval = TimeSpan.FromSeconds(5);
-        private static readonly TimeSpan MaxRetryInterval = TimeSpan.FromSeconds(60);
+        // A failed attempt is an instantly refused loopback connection, so a fixed short interval costs nothing.
+        private static readonly TimeSpan RetryInterval = TimeSpan.FromSeconds(5);
 
         private readonly ILogger _logger;
         private readonly Teamspeak3ChannelState _channelState;
@@ -38,14 +38,13 @@ namespace MacroDeck.Teamspeak3Plugin.Service
             telnet.Connected += OnCommandConnectionEstablished;
             try
             {
-                var delay = MinRetryInterval;
                 while (!stoppingToken.IsCancellationRequested)
                 {
                     var apiKey = telnet.ApiKey;
                     if (apiKey is null)
                     {
                         _failures.RecordSuccess();
-                        await Task.Delay(MinRetryInterval, stoppingToken);
+                        await Task.Delay(RetryInterval, stoppingToken);
                         continue;
                     }
 
@@ -67,17 +66,10 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     }
                     catch (OperationCanceledException)
                     {
-                        delay = MinRetryInterval;
                         continue;
                     }
                     catch (Exception ex)
                     {
-                        if (!_failures.IsActive)
-                        {
-                            // First failure after a working session: retry quickly instead of the last backoff.
-                            delay = MinRetryInterval;
-                        }
-
                         RecordFailure(ex.Message);
                         _channelState.Reset();
                     }
@@ -86,8 +78,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                         Interlocked.CompareExchange(ref _session, null, session);
                     }
 
-                    await Task.Delay(delay, stoppingToken);
-                    delay = delay * 2 > MaxRetryInterval ? MaxRetryInterval : delay * 2;
+                    await Task.Delay(RetryInterval, stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
