@@ -39,6 +39,11 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
         public int ClientId { get => _clientId; private set => _clientId = value; }
 
+        private volatile int _serverConnectionHandlerId = -1;
+
+        // The server tab every command refers to. It follows the tab that is active in TeamSpeak.
+        public int ServerConnectionHandlerId { get => _serverConnectionHandlerId; private set => _serverConnectionHandlerId = value; }
+
         public bool IsConnected => _client?.Connected == true && _reader is not null && _writer is not null;
 
         public bool HasApiKey => _apiKey is not null;
@@ -189,6 +194,97 @@ namespace MacroDeck.Teamspeak3Plugin.Service
             }
         }
 
+        public bool FollowActiveServerConnection(int? activeServerConnectionHandlerId = null)
+        {
+            lock (_lock)
+            {
+                if (!IsConnected)
+                {
+                    return false;
+                }
+
+                if (UseActiveServerConnection(activeServerConnectionHandlerId))
+                {
+                    ClientId = -1;
+                    ResetMuteStates();
+                }
+
+                return CheckConnection();
+            }
+        }
+
+        public CurrentChannelSnapshot? GetCurrentChannelSnapshot()
+        {
+            lock (_lock)
+            {
+                if (!IsConnected)
+                {
+                    return null;
+                }
+
+                var whoami = GetTelnetResponse("whoami");
+                if (!Teamspeak3Response.IsOk(whoami)
+                    || Teamspeak3Response.Entries(whoami) is not [var self, ..]
+                    || Teamspeak3Response.IntValue(self, "cid") is not { } channelId)
+                {
+                    return null;
+                }
+
+                var channel = GetTelnetResponse($"channelvariable cid={channelId} channel_name");
+                var channelName = Teamspeak3Response.Entries(channel) is [var channelEntry, ..]
+                    ? channelEntry.GetValueOrDefault("channel_name")
+                    : null;
+
+                var clientList = GetTelnetResponse($"channelclientlist cid={channelId} -away -voice");
+                if (!Teamspeak3Response.IsOk(clientList))
+                {
+                    return null;
+                }
+
+                var clients = Teamspeak3Response.Entries(clientList)
+                    // Server query clients (client_type=1) are invisible in TeamSpeak's own channel tree.
+                    .Where(entry => entry.GetValueOrDefault("client_type", "0") == "0")
+                    .Select(entry => Teamspeak3Response.IntValue(entry, "clid") is { } clid
+                        ? new ChannelClient { ClientId = clid, Nickname = string.Empty }.With(entry)
+                        : null)
+                    .OfType<ChannelClient>()
+                    .ToList();
+
+                return new CurrentChannelSnapshot(
+                    ServerConnectionHandlerId,
+                    channelId,
+                    Teamspeak3Escaping.Unescape(channelName ?? string.Empty),
+                    clients);
+            }
+        }
+
+        // Returns whether the selected server tab changed. A tab switch notification names the new tab;
+        // otherwise the tab that is active in TeamSpeak is asked for.
+        private bool UseActiveServerConnection(int? knownActive = null)
+        {
+            var active = knownActive;
+            if (active is null)
+            {
+                var response = GetTelnetResponse("currentschandlerid");
+                active = Teamspeak3Response.IsOk(response) && Teamspeak3Response.Entries(response) is [var entry, ..]
+                    ? Teamspeak3Response.IntValue(entry, "schandlerid")
+                    : null;
+            }
+
+            if (active is not { } handlerId || handlerId == ServerConnectionHandlerId)
+            {
+                return false;
+            }
+
+            if (!Teamspeak3Response.IsOk(GetTelnetResponse($"use schandlerid={handlerId}")))
+            {
+                return false;
+            }
+
+            ServerConnectionHandlerId = handlerId;
+            return true;
+        }
+
         public void ApplyMuteNotification(bool? inputMuted, bool? outputMuted)
         {
             if (inputMuted.HasValue)
@@ -243,13 +339,14 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                     throw new InvalidOperationException(LF(Strings.Service.Teamspeak3Telnet.ConnectClient.UnexpectedWelcome(), welcome));
                 }
 
-                var authResponse = GetTelnetResponse($"auth apikey={Escape(apiKey)}");
+                var authResponse = GetTelnetResponse($"auth apikey={Teamspeak3Escaping.Escape(apiKey)}");
                 if (!authResponse.Contains("msg=ok", StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(LF(Strings.Service.Teamspeak3Telnet.ConnectClient.AuthenticationFailed(), authResponse));
                 }
 
                 _apiKey = apiKey;
+                UseActiveServerConnection();
                 ClientId = GetClientId();
                 if (ClientId != -1)
                 {
@@ -618,6 +715,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                 _reader = null;
                 _client = null;
                 ClientId = -1;
+                ServerConnectionHandlerId = -1;
                 ResetMuteStates();
             }
         }
@@ -739,16 +837,6 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
             return string.Join("\n", lines);
         }
-
-        internal static string Escape(string value)
-            => value
-                .Replace("\\", "\\\\", StringComparison.Ordinal)
-                .Replace("/", "\\/", StringComparison.Ordinal)
-                .Replace("|", "\\p", StringComparison.Ordinal)
-                .Replace(" ", "\\s", StringComparison.Ordinal)
-                .Replace("\n", "\\n", StringComparison.Ordinal)
-                .Replace("\r", "\\r", StringComparison.Ordinal)
-                .Replace("\t", "\\t", StringComparison.Ordinal);
 
         private bool TryParseKeyIntValue(string response, string key, out int value)
         {

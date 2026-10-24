@@ -1,8 +1,11 @@
+using MacroDeck.Teamspeak3Plugin.Helper;
 using MacroDeck.Teamspeak3Plugin.Model;
 
 namespace MacroDeck.Teamspeak3Plugin.Service
 {
     internal sealed record Teamspeak3Notification(
+        string Name,
+        IReadOnlyList<IReadOnlyDictionary<string, string>> Entries,
         IReadOnlyCollection<string> AffectedVariableIds,
         bool ServerConnectionChanged,
         bool? InputMuted = null,
@@ -12,42 +15,44 @@ namespace MacroDeck.Teamspeak3Plugin.Service
         [
             "notifyclientupdated",
             "notifyclientmoved",
+            "notifycliententerview",
+            "notifyclientleftview",
+            "notifytalkstatuschange",
             "notifychanneledited",
             "notifychanneldeleted",
             "notifyconnectstatuschange",
             "notifycurrentserverconnectionchanged",
         ];
 
-        private static readonly Teamspeak3Notification None = new([], false);
-
         public static Teamspeak3Notification Parse(string line, int ownClientId)
         {
             var trimmed = line.Trim();
             if (!trimmed.StartsWith("notify", StringComparison.Ordinal))
             {
-                return None;
+                return new Teamspeak3Notification(string.Empty, [], [], false);
             }
 
             var separator = trimmed.IndexOf(' ', StringComparison.Ordinal);
             var name = separator < 0 ? trimmed : trimmed[..separator];
-            var entries = separator < 0
+            IReadOnlyList<IReadOnlyDictionary<string, string>> entries = separator < 0
                 ? []
-                : trimmed[(separator + 1)..].Split('|').Select(ParseEntry).ToList();
+                : trimmed[(separator + 1)..].Split('|').Select(Teamspeak3Response.ParseEntry).ToList();
+            var none = new Teamspeak3Notification(name, entries, [], false);
 
             switch (name)
             {
                 case "notifyconnectstatuschange":
                 case "notifycurrentserverconnectionchanged":
-                    return new Teamspeak3Notification(VariableIds.All, true);
+                    return none with { AffectedVariableIds = VariableIds.All, ServerConnectionChanged = true };
 
                 case "notifychanneledited":
                 case "notifychanneldeleted":
-                    return new Teamspeak3Notification([VariableIds.CurrentChannel], false);
+                    return none with { AffectedVariableIds = [VariableIds.CurrentChannel] };
 
                 case "notifyclientmoved":
                     return entries.Any(e => IsOwnClient(e, ownClientId))
-                        ? new Teamspeak3Notification([VariableIds.CurrentChannel], false)
-                        : None;
+                        ? none with { AffectedVariableIds = [VariableIds.CurrentChannel] }
+                        : none;
 
                 case "notifyclientupdated":
                     var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -68,36 +73,19 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                         }
                     }
 
-                    return ids.Count == 0 ? None : new Teamspeak3Notification(ids, false, inputMuted, outputMuted);
+                    return ids.Count == 0
+                        ? none
+                        : none with { AffectedVariableIds = ids, InputMuted = inputMuted, OutputMuted = outputMuted };
 
                 default:
-                    return None;
+                    return none;
             }
         }
 
         // An unknown own id (not connected to a server yet) accepts every client, since a spare refresh is cheap.
-        private static bool IsOwnClient(Dictionary<string, string> entry, int ownClientId)
+        private static bool IsOwnClient(IReadOnlyDictionary<string, string> entry, int ownClientId)
             => ownClientId == -1
                 || !entry.TryGetValue("clid", out var clid)
                 || clid == ownClientId.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-        private static Dictionary<string, string> ParseEntry(string entry)
-        {
-            var values = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var token in entry.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var equals = token.IndexOf('=', StringComparison.Ordinal);
-                if (equals < 0)
-                {
-                    values[token] = string.Empty;
-                }
-                else
-                {
-                    values[token[..equals]] = token[(equals + 1)..];
-                }
-            }
-
-            return values;
-        }
     }
 }

@@ -1,4 +1,5 @@
 using MacroDeck.Sdk.Logging;
+using MacroDeck.Teamspeak3Plugin.Helper;
 using MacroDeck.Teamspeak3Plugin.Model;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -18,10 +19,15 @@ namespace MacroDeck.Teamspeak3Plugin.Service
         private static readonly TimeSpan MaxRetryInterval = TimeSpan.FromSeconds(60);
 
         private readonly ILogger _logger;
+        private readonly Teamspeak3ChannelState _channelState;
         private readonly FailureEpisodeTracker _failures = new(null, TimeProvider.System);
         private CancellationTokenSource? _session;
 
-        public Teamspeak3NotificationListener(ILogger logger) => _logger = logger.ForContext<Teamspeak3NotificationListener>();
+        public Teamspeak3NotificationListener(ILogger logger, Teamspeak3ChannelState channelState)
+        {
+            _logger = logger.ForContext<Teamspeak3NotificationListener>();
+            _channelState = channelState;
+        }
 
         public event EventHandler<VariablesChangedEventArgs>? VariablesChanged;
 
@@ -73,6 +79,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
                         }
 
                         RecordFailure(ex.Message);
+                        _channelState.Reset();
                     }
                     finally
                     {
@@ -113,7 +120,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
             using var reader = new StreamReader(stream);
             using var writer = new StreamWriter(stream) { AutoFlush = true };
 
-            await SendAsync(reader, writer, $"auth apikey={Teamspeak3Telnet.Escape(apiKey)}", cancellationToken);
+            await SendAsync(reader, writer, $"auth apikey={Teamspeak3Escaping.Escape(apiKey)}", cancellationToken);
             foreach (var eventName in Teamspeak3Notification.RegisteredEvents)
             {
                 await SendAsync(reader, writer, $"clientnotifyregister schandlerid=0 event={eventName}", cancellationToken);
@@ -126,6 +133,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
             }
 
             RaiseVariablesChanged(VariableIds.All);
+            _channelState.RequestRefresh();
 
             using var keepAliveStop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var keepAlive = KeepAliveAsync(writer, keepAliveStop.Token);
@@ -172,7 +180,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
         private async Task DispatchAsync(string line, CancellationToken cancellationToken)
         {
             var notification = Teamspeak3Notification.Parse(line, Teamspeak3Telnet.Instance.ClientId);
-            if (notification.AffectedVariableIds.Count == 0)
+            if (notification.Name.Length == 0)
             {
                 return;
             }
@@ -181,11 +189,19 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
             if (notification.ServerConnectionChanged)
             {
-                // The own client id changes with the server connection; refresh it before the variables are read.
-                await Task.Run(Teamspeak3Telnet.Instance.CheckConnection, cancellationToken);
+                // The tab and the own client id change with the server connection; follow them before anything is read.
+                var newTab = notification.Name == "notifycurrentserverconnectionchanged" && notification.Entries is [var entry, ..]
+                    ? Teamspeak3Response.IntValue(entry, "schandlerid")
+                    : null;
+                await Task.Run(() => Teamspeak3Telnet.Instance.FollowActiveServerConnection(newTab), cancellationToken);
             }
 
-            RaiseVariablesChanged(notification.AffectedVariableIds);
+            _channelState.Apply(notification);
+
+            if (notification.AffectedVariableIds.Count > 0)
+            {
+                RaiseVariablesChanged(notification.AffectedVariableIds);
+            }
         }
 
         // Keeps an otherwise silent notification-only session from being dropped as idle.
@@ -227,6 +243,7 @@ namespace MacroDeck.Teamspeak3Plugin.Service
 
         private void OnApiKeyChanged(object? sender, EventArgs e)
         {
+            _channelState.Reset();
             try
             {
                 Volatile.Read(ref _session)?.Cancel();
@@ -237,7 +254,11 @@ namespace MacroDeck.Teamspeak3Plugin.Service
             }
         }
 
-        private void OnCommandConnectionEstablished(object? sender, EventArgs e) => RaiseVariablesChanged(VariableIds.All);
+        private void OnCommandConnectionEstablished(object? sender, EventArgs e)
+        {
+            RaiseVariablesChanged(VariableIds.All);
+            _channelState.RequestRefresh();
+        }
     }
 
     public sealed class VariablesChangedEventArgs(IReadOnlyCollection<string> variableIds) : EventArgs
