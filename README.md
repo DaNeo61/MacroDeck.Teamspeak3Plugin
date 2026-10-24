@@ -16,6 +16,9 @@ Variables update as soon as TeamSpeak reports a change through ClientQuery notif
 30 seconds is only the fallback. The plugin talks to the local TeamSpeak client only (`127.0.0.1:25639`)
 and keeps two ClientQuery connections open: one for commands, one for notifications.
 
+### Widget
+- see current channel with connected users live ( thanks to @manuelmayer-dev )
+
 ## Planned Features
 ### Actions
 - Away Options
@@ -37,6 +40,9 @@ and keeps two ClientQuery connections open: one for commands, one for notificati
 
 
 # Version History
-
+## 0.6.0
+- Event tracked Variables
+- reconnecting API connection
+- live channel widget 
 ## 0.5.0
 - Migration from MacroDeck v2 Plugin
