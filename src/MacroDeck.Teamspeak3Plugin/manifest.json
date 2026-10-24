@@ -3,7 +3,7 @@
   "manifestVersion": 1,
   "id": "pro.daneo.teamspeak3plugin",
   "name": "Teamspeak3Plugin",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "A plugin to control teamspeak 3 via macrodeck",
   "icon": "Assets/icon.png",
   "entrypoints": {
